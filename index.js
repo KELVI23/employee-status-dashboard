@@ -25,7 +25,7 @@ const { dialog } = require('electron');
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
 
-// const server = 'https://glotmansimpson-server.com';
+// const server = 'https://your-server.com';
 // const feed = `${server}/update/${process.platform}/${app.getVersion()}`;
 // autoUpdater.setFeedURL({ url: feed });
 

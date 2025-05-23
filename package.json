@@ -1,0 +1,60 @@
+{
+  "name": "GS-WorkHub",
+  "version": "2.0.0",
+  "description": "Glotman Simpson WorkHub",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"npm run start:electron\" \"npm run start:backend\"",
+    "start:electron": "electron . --no-sandbox",
+    "start:backend": "node backend/index.js",
+    "dist": "electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "build": {
+    "appId": "com.GlotmanSimpson.GS-WorkHub",
+    "productName": "GS-WorkHub",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Glotman-Simpson",
+        "repo": "https://github.com/Glotman-Simpson/GS-Workhub.git"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/*.map"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "favicon.ico",
+      "certificateFile": "gs-workhub-certificate.pfx",
+      "certificatePassword": "Hu1wUVFyi1cK7g",
+      "publisherName": "Glotman Simpson Engineers",
+      "signingHashAlgorithms": ["sha256"]
+    }
+  },
+  "keywords": [],
+  "author": "Kelvin Musodza - Glotman Simpson",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "electron": "^33.0.1",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "auto-launch": "^5.0.6",
+    "axios": "^1.7.7",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "electron-log": "^5.2.0",
+    "electron-updater": "^6.3.9",
+    "express": "^4.21.1",
+    "GS-WorkHub": "file:",
+    "jsonwebtoken": "^9.0.2",
+    "sqlite3": "^5.1.7"
+  }
+}

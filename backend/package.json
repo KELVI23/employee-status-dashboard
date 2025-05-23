@@ -1,0 +1,28 @@
+{
+  "name": "backend",
+  "version": "2.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Kelvin Musodza - Glotman Simpson",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "backend": "file:",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "fs": "^0.0.1-security",
+    "jsonwebtoken": "^9.0.2",
+    "luxon": "^3.5.0",
+    "node-schedule": "^2.1.1",
+    "path": "^0.12.7",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}

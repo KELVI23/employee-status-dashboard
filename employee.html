@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:3003; object-src 'none';"> -->
+
+  <title>Employee Status</title>
+  <link rel="stylesheet" href="public/css/styles.css">
+</head>
+<header>
+  <img src="images/logo.png" alt="Company Logo" id="companyLogo">
+</header>
+
+<body>
+  <h1>Employee Status</h1>
+
+  <!-- Search Input for searching users by name -->
+<label for="searchUser">Search</label>
+<input type="text" id="searchUser" placeholder="Enter name">
+
+  <form id="statusForm">
+    <label>Status:</label>
+    <select id="status">
+      <option value="In-Office">In-Office</option>
+      <option value="Working from Home">Working from Home</option>
+      <option value="Out of Office">Out of Office</option>
+      <option value="Custom">Custom</option>
+    </select>
+    <input type="text" id="customStatus" placeholder="Enter custom status" style="display: none;">
+    <button type="submit">Update Status</button>
+  </form>
+
+  <table id="statusTable">
+    <thead>
+      <tr>
+        <th onclick="sortTableByColumn('name')">Name</th>
+        <th onclick="sortTableByColumn('status')">Status</th>
+        <th onclick="sortTableByColumn('phone')">Phone</th>
+        <th onclick="sortTableByColumn('location')">Location</th>
+        <th onclick="sortTableByColumn('updated_at')">Last Updated</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="search.js" type="module"></script>
+  
+  <script type="module">
+    import { Trie } from './search.js';
+    const userTrie = new Trie(); // Initialize Trie
+    const token = localStorage.getItem('token');
+    const userRole = localStorage.getItem('role');
+    const userId = localStorage.getItem('userId');
+
+    // Show/hide the custom status input based on the selection
+    document.getElementById('status').addEventListener('change', function() {
+      const customStatusInput = document.getElementById('customStatus');
+      if (this.value === 'Custom') {
+        customStatusInput.style.display = 'block';
+      } else {
+        customStatusInput.style.display = 'none';
+        customStatusInput.value = '';  // Clear the custom status input when hidden
+      }
+    });
+
+   
+    const ipcRenderer = window.api; // Access the exposed ipcRenderer
+
+    ipcRenderer.on('view-all-users', (event, role) => {
+      // if (role === 'employee') {
+        isViewingStatuses = true;  // Set flag to true when "All Users" is selected
+        startStatusRefresh();  // Start refreshing statuses
+      // } else {
+      //   isViewingStatuses = false;  // If not employee, don't start refresh
+      //   stopStatusRefresh();  // Stop refreshing
+      // }
+    });
+
+    // Handle location selection
+    ipcRenderer.on('view-by-location', (event, location) => {
+      isViewingStatuses = false; // Stop querying /status when viewing by location
+      stopStatusRefresh();
+    });
+
+
+    // Listen for the event sent by the main process to load statuses immediately after login
+    ipcRenderer.on('load-statuses-immediately', () => {
+      isViewingStatuses = true;  // Set flag to true
+      startStatusRefresh();  // Start the status refresh right away
+    });
+
+    let isViewingStatuses = false;
+    let refreshInterval = null;
+
+    let currentUsers = []; // Track the current list of users for sorting
+    let lastSortedColumn = null; // Store the last sorted column
+    let lastSortDirection = true; // true for ascending, false for descending
+
+    async function loadStatuses() {
+      if (!isViewingStatuses) return; // Skip if not viewing statuses
+
+      const response = await fetch('http://localhost:3003/status', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        console.error('Failed to load statuses');
+        return;
+      }
+
+      const users = await response.json();
+      currentUsers = users; // Store loaded users for sorting
+
+      // Apply the last sort if it exists
+      if (lastSortedColumn) {
+        sortTableByColumn(lastSortedColumn, false); // `false` here to avoid toggling direction
+      } else {
+        displayUsers(users); // Display users in the table
+      }
+
+
+      // const tableBody = document.querySelector('#statusTable tbody');
+      // tableBody.innerHTML = ''; // Clear previous data
+      // userTrie.root = new Trie() // Clear Trie before re-populating
+
+      // users.forEach(user => {
+      //   // if (user.name) { // Ensure user has a name before inserting
+      //   //   userTrie.insert(user); // Insert user into the Trie
+      //   // }
+
+      //   let statusColor;
+
+      //   // Define colors based on the status
+      //   switch (user.status) {
+      //     case 'In-Office':
+      //       statusColor = 'green';
+      //       break;
+      //     case 'Working from Home':
+      //       statusColor = 'blue';
+      //       break;
+      //     case 'On Leave':
+      //       statusColor = 'red';
+      //       break;
+      //     default:
+      //       statusColor = 'orange';  // Custom status
+      //       break;
+      //   }
+
+      //   const row = document.createElement('tr');
+      //   row.innerHTML = `
+      //     <td>${user.name}</td>
+      //      <td style="background-color: ${statusColor}; color: white;">
+      //     ${user.status}
+      //     </td>
+      //     <td><a href="tel:${user.phone}">${user.phone || ''}</a></td>
+      //     <td>${user.location || 'N/A'}</td> <!-- Display location -->
+      //     <td>${new Date(user.updated_at).toLocaleString()}</td>
+      //   `;
+      //   tableBody.appendChild(row);
+      // });
+    }
+
+    document.getElementById('searchUser').addEventListener('input', function() {
+      const searchQuery = this.value.trim();
+      if (searchQuery === '') {
+        loadStatuses(); // Reload all users if the search query is empty
+      } else {
+        const matchingUsers = userTrie.search(searchQuery);
+        displayUsers(matchingUsers);
+      }
+    });
+
+    /*Sorting*/
+    let sortDirection = {}; // Track the sorting direction for each column
+
+    // Define sortTableByColumn as a global function
+    window.sortTableByColumn = function(column, toggleDirection = true) {
+      if (toggleDirection) {
+        // Toggle the sorting direction only if requested
+        lastSortDirection = !lastSortDirection;
+      }
+
+      // Update the last sorted column
+      lastSortedColumn = column;
+
+      // Sort users based on the selected column and direction
+      const sortedUsers = [...currentUsers].sort((a, b) => {
+        if (column === 'updated_at') {
+          // Sort by date
+          return lastSortDirection
+            ? new Date(a[column]) - new Date(b[column])
+            : new Date(b[column]) - new Date(a[column]);
+        } else if (column === 'phone') {
+          // Sort by phone number as a string
+          return lastSortDirection
+            ? a[column].localeCompare(b[column])
+            : b[column].localeCompare(a[column]);
+        } else {
+          // Sort by string or number
+          return lastSortDirection
+            ? a[column].toString().localeCompare(b[column].toString())
+            : b[column].toString().localeCompare(a[column].toString());
+        }
+      });
+
+      displayUsers(sortedUsers); // Display the sorted users
+    };
+
+    function displayUsers(users) {
+      //currentUsers = users; // Update current users for sorting reference
+
+      const tableBody = document.querySelector('#statusTable tbody');
+      tableBody.innerHTML = '';
+
+      users.forEach(user => {
+        let statusColor;
+        switch (user.status) {
+          case 'In-Office': statusColor = 'green'; break;
+          case 'Working from Home': statusColor = 'blue'; break;
+          case 'Out of Office': statusColor = 'red'; break;
+          default: statusColor = 'gold'; break;
+        }
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${user.name}</td>
+          <td style="background-color: ${statusColor}; color: white;">${user.status}</td>
+          <td><a href="tel:${user.phone}">${user.phone || ''}</a></td>
+          <td>${user.location || 'N/A'}</td>
+          <td>${new Date(user.updated_at).toLocaleString()}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+
+    function startStatusRefresh() {
+      if (!refreshInterval) {
+        loadStatuses(); // Load immediately
+        refreshInterval = setInterval(loadStatuses, 1000); // Refresh every 1 second
+      }
+    }
+
+    function stopStatusRefresh() {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+      }
+    }
+
+
+    document.getElementById('statusForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('status').value === 'Custom'
+        ? document.getElementById('customStatus').value
+        : document.getElementById('status').value;
+
+      const response = await fetch('http://localhost:3003/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+
+      if (response.ok) {
+        alert('Status updated successfully!');
+        loadStatuses();
+      } else {
+        alert('Error updating status');
+      }
+    };
+
+    // function openEditModal(currentStatus) {
+    //   const modal = document.createElement('div');
+    //   modal.innerHTML = `
+    //     <div class="modal">
+    //       <label for="editStatus">Select Status:</label>
+    //       <select id="editStatus">
+    //         <option value="In-Office" ${currentStatus === 'In-Office' ? 'selected' : ''}>In-Office</option>
+    //         <option value="Working from Home" ${currentStatus === 'Working from Home' ? 'selected' : ''}>Working from Home</option>
+    //         <option value="On Leave" ${currentStatus === 'On Leave' ? 'selected' : ''}>On Leave</option>
+    //       </select>
+    //       <button onclick="updateStatus()">Save</button>
+    //     </div>
+    //   `;
+    //   document.body.appendChild(modal);
+    // }
+
+    async function updateStatus() {
+      const status = document.getElementById('editStatus').value;
+      await fetch('http://localhost:3003/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+      // loadStatuses();
+      // document.querySelector('.modal').remove();
+    }
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:3003; object-src 'none';"> -->
+
+  <title>GS WorkHub</title>
+  <link rel="stylesheet" href="public/css/styles.css">
+
+</head>
+<body class="login-page">
+  <h3>Welcome, Please log in!</h3>
+  
+  <form id="loginForm">
+    <label>Name:</label>
+    <input type="text" id="name" required>
+    <label>Password:</label>
+    <input type="password" id="password">
+    <button type="submit">Login</button>
+  </form>
+
+  <!-- Custom alert modal -->
+  <div id="alertModal">
+    <span id="alertMessage"></span>
+    <button onclick="closeAlertModal()">Close</button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div id="loadingSpinner">
+    <img src="images/spinner.gif" alt="Loading...">
+  </div>
+  
+  <script>
+    console.log('window.api:', window.api); // Debug to check if api is available
+
+    function showAlert(message) {
+      document.getElementById('alertMessage').innerText = message;
+      document.getElementById('alertModal').style.display = 'block';
+    }
+
+    function closeAlertModal() {
+      document.getElementById('alertModal').style.display = 'none';
+    }
+
+    function showLoadingSpinner() {
+      document.getElementById('loadingSpinner').style.display = 'block';
+    }
+
+    function hideLoadingSpinner() {
+      document.getElementById('loadingSpinner').style.display = 'none';
+    }
+
+    document.getElementById('loginForm').onsubmit = async (e) => {
+      e.preventDefault();
+      showLoadingSpinner(); // Show loading spinner
+      const submitButton = document.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+
+      const name = document.getElementById('name').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch('http://localhost:3003/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, password })
+        });
+        const data = await response.json();
+
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('role', data.role);
+
+          if (window.api) {
+            window.api.send('login-success', { name, token: data.token, role: data.role });
+          }
+        } else {
+          showAlert('Login failed');
+        }
+      } catch (error) {
+        showAlert('An error occurred while logging in');
+        console.error(error);
+      } finally {
+        hideLoadingSpinner(); // Hide spinner
+        submitButton.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

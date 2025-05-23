@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:3003; object-src 'none';"> -->
+
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="public/css/styles.css">
+</head>
+<header>
+  <img src="images/logo.png" alt="Company Logo" id="companyLogo">
+</header>
+
+<body>
+  <h1>Admin Dashboard</h1>
+  <form id="addUserForm">
+    <input type="text" placeholder="Name" id="name" required>
+    <input type="text" placeholder="Phone" id="phone">
+    <input type="password" placeholder="Password" id="password">
+    <select id="role">
+      <option value="employee">Employee</option>
+      <option value="admin">Admin</option>
+    </select>
+
+    <!-- Location selection or new entry -->
+    <label for="locationSelect">Location:</label>
+    <select id="locationSelect">
+      <option value="">Select Location</option>
+    </select>
+    <input type="text" placeholder="Or enter a new location" id="newLocation" />
+
+    <button type="submit">Add User</button>
+  </form>
+
+  <h2>Manage Sign-off Schedules</h2>
+   <form id="addScheduleForm">
+     <input type="text" placeholder="Location" id="scheduleLocation" required>
+     <input type="time" id="scheduleTime" required>
+     <button type="submit">Add Schedule</button>
+   </form>
+
+   <table id="scheduleTable">
+     <thead>
+       <tr>
+         <th>Location</th>
+         <th>Time</th>
+         <th>Actions</th>
+       </tr>
+     </thead>
+     <tbody></tbody>
+   </table>
+
+  <h2>User List</h2>
+  <table id="userTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Location</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- Edit User Modal -->
+  <div class="modal-overlay" id="modalOverlay"></div>
+  <div class="modal" id="editUserModal">
+    <h3>Edit User</h3>
+    <form id="editUserForm">
+      <label for="editName">Name:</label>
+      <input type="text" id="editName" required>
+      <label for="editPhone">Phone:</label>
+      <input type="text" id="editPhone">
+      <label for="editRole">Role:</label>
+      <select id="editRole">
+        <option value="employee">Employee</option>
+        <option value="admin">Admin</option>
+      </select>
+      <label for="editStatus">Status:</label>
+      <input type="text" id="editStatus">
+      <label for="editLocation">Location:</label>
+      <input type="text" id="editLocation"> 
+      <button type="submit">Save Changes</button>
+      <button type="button" onclick="closeModal()">Cancel</button> 
+    </form>
+  </div>
+
+  <!-- Non-blocking alert modals -->
+  <div id="successModal" class="modal">
+    <p id="successMessage"></p>
+    <button onclick="closeSuccessModal()">Close</button>
+  </div>
+
+  <div id="errorModal" class="modal">
+    <p id="errorMessage"></p>
+    <button onclick="closeErrorModal()">Close</button>
+  </div>
+
+  <div class="modal-overlay" id="successModalOverlay"></div>
+  <div class="modal-overlay" id="errorModalOverlay"></div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    let currentEditUserId = null;
+    let locations = [];
+  
+    // Functions to show and hide success and error modals
+    function showSuccessModal(message) {
+      document.getElementById('successMessage').innerText = message;
+      document.getElementById('successModal').classList.add('active');
+      document.getElementById('successModalOverlay').classList.add('active');
+    }
+  
+    function closeSuccessModal() {
+      document.getElementById('successModal').classList.remove('active');
+      document.getElementById('successModalOverlay').classList.remove('active');
+    }
+  
+    function showErrorModal(message) {
+      document.getElementById('errorMessage').innerText = message;
+      document.getElementById('errorModal').classList.add('active');
+      document.getElementById('errorModalOverlay').classList.add('active');
+    }
+  
+    function closeErrorModal() {
+      document.getElementById('errorModal').classList.remove('active');
+      document.getElementById('errorModalOverlay').classList.remove('active');
+    }
+
+    /* Load schedules and populate the schedule list**/
+    async function loadSchedules() {
+     try {
+       const response = await fetch('http://localhost:3003/schedules', {
+         headers: { 'Authorization': `Bearer ${token}` }
+       });
+
+       if (!response.ok) {
+         throw new Error('Failed to load schedules');
+       }
+
+       const schedules = await response.json();
+       const scheduleTable = document.querySelector('#scheduleTable tbody');
+       scheduleTable.innerHTML = ''; // Clear previous data
+
+       schedules.forEach(schedule => {
+         const row = document.createElement('tr');
+         row.innerHTML = `
+           <td>${schedule.location}</td>
+           <td>${schedule.time}</td>
+           <td>
+             <button onclick="deleteSchedule(${schedule.id})">Delete</button>
+           </td>
+         `;
+         scheduleTable.appendChild(row);
+       });
+     } catch (error) {
+       showErrorModal(`Error loading schedules: ${error.message}`);
+     }
+   }
+
+   document.getElementById('addScheduleForm').onsubmit = async (e) => {
+     e.preventDefault();
+     const location = document.getElementById('scheduleLocation').value;
+     const time = document.getElementById('scheduleTime').value;
+
+     try {
+       const response = await fetch('http://localhost:3003/schedules', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${token}`
+         },
+         body: JSON.stringify({ location, time })
+       });
+
+       if (!response.ok) {
+         throw new Error('Failed to add schedule');
+       }
+
+       loadSchedules(); // Reload schedules
+       showSuccessModal('Schedule added successfully!');
+     } catch (error) {
+       showErrorModal(`Failed to add schedule: ${error.message}`);
+     }
+   };
+
+   async function deleteSchedule(id) {
+     const confirmation = confirm('Are you sure you want to delete this schedule?');
+     if (!confirmation) return;
+
+     try {
+       const response = await fetch(`http://localhost:3003/schedules/${id}`, {
+         method: 'DELETE',
+         headers: {
+           'Authorization': `Bearer ${token}`
+         }
+       });
+
+       if (!response.ok) {
+         throw new Error('Failed to delete schedule');
+       }
+
+       loadSchedules(); // Reload schedules
+       showSuccessModal('Schedule deleted successfully!');
+     } catch (error) {
+       showErrorModal(`Failed to delete schedule: ${error.message}`);
+     }
+   }
+
+   loadSchedules(); // Load schedules on page load
+  
+    // Load Users and populate the user list
+    async function loadUsers() {
+      try {
+        const response = await fetch('http://localhost:3003/users', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+  
+        if (!response.ok) {
+          throw new Error('Failed to load users');
+        }
+  
+        const users = await response.json();
+  
+        const userTable = document.querySelector('#userTable tbody');
+        userTable.innerHTML = ''; // Clear previous data
+  
+        users.forEach(user => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${user.name}</td>
+            <td>${user.phone || ''}</td>
+            <td>${user.role}</td>
+            <td>${user.status || 'In-Office'}</td>
+            <td>${user.location || ''}</td>
+            <td>
+              <button onclick="editUser(${user.id}, '${user.name}', '${user.phone || ''}', '${user.role}', '${user.status || 'In-Office'}', '${user.location || ''}')">Edit</button>
+              <button class="delete-button" onclick="deleteUser(${user.id})">Delete</button>
+            </td>
+          `;
+          userTable.appendChild(row);
+  
+          if (user.location && !locations.includes(user.location)) {
+            locations.push(user.location);
+            addLocationOption(user.location);
+          }
+        });
+      } catch (error) {
+        showErrorModal(`Error loading users: ${error.message}`);
+      }
+    }
+  
+    // Delete a user
+    async function deleteUser(userId) {
+      const confirmation = confirm('Are you sure you want to delete this user?');
+      if (!confirmation) return;
+  
+      try {
+        const response = await fetch(`http://localhost:3003/users/${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+  
+        if (!response.ok) {
+          throw new Error('Failed to delete user');
+        }
+  
+        loadUsers(); // Reload user list after deletion
+        showSuccessModal('User deleted successfully!');
+      } catch (error) {
+        showErrorModal(`Failed to delete user: ${error.message}`);
+      }
+    }
+  
+    function addLocationOption(location) {
+      const locationSelect = document.getElementById('locationSelect');
+      const option = document.createElement('option');
+      option.value = location;
+      option.textContent = location;
+      locationSelect.appendChild(option);
+    }
+  
+    // Load distinct locations for dropdown
+    async function loadLocations() {
+      try {
+        const response = await fetch('http://localhost:3003/locations', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+  
+        if (!response.ok) {
+          throw new Error('Failed to load locations');
+        }
+  
+        const locations = await response.json();
+  
+        const locationSelect = document.getElementById('locationSelect');
+        locationSelect.innerHTML = '<option value="">Select Location</option>'; // Reset dropdown
+  
+        locations.forEach(location => {
+          const option = document.createElement('option');
+          option.value = location;
+          option.textContent = location;
+          locationSelect.appendChild(option);
+        });
+      } catch (error) {
+        showErrorModal(`Error loading locations: ${error.message}`);
+      }
+    }
+  
+    // Form submission for adding user
+    document.getElementById('addUserForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const phone = document.getElementById('phone').value;
+      const password = document.getElementById('password').value;
+      const role = document.getElementById('role').value;
+  
+      const selectedLocation = document.getElementById('locationSelect').value;
+      const newLocation = document.getElementById('newLocation').value;
+      const location = newLocation || selectedLocation;
+  
+      try {
+        const response = await fetch('http://localhost:3003/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ name, phone, password, role, location })  // Send location
+        });
+  
+        if (!response.ok) {
+          throw new Error('Failed to add user');
+        }
+  
+        loadUsers();  // Reload user list after successful addition
+        showSuccessModal('User added successfully!');
+      } catch (error) {
+        showErrorModal(`Failed to add user: ${error.message}`);
+      }
+    };
+  
+    function editUser(id, name, phone, role, status, location) {
+      currentEditUserId = id;
+      document.getElementById('editName').value = name;
+      document.getElementById('editPhone').value = phone || '';
+      document.getElementById('editRole').value = role;
+      document.getElementById('editStatus').value = status || '';
+      document.getElementById('editLocation').value = location || ''; // Populate location
+  
+      document.getElementById('editUserModal').classList.add('active');
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+  
+    document.getElementById('editUserForm').onsubmit = async (e) => {
+      e.preventDefault();
+  
+      const name = document.getElementById('editName').value;
+      const phone = document.getElementById('editPhone').value;
+      const role = document.getElementById('editRole').value;
+      const status = document.getElementById('editStatus').value;
+      const location = document.getElementById('editLocation').value;
+  
+      try {
+        const response = await fetch(`http://localhost:3003/users/${currentEditUserId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ name, phone, role, status, location })  // Include location in update
+        });
+  
+        if (!response.ok) {
+          throw new Error('Failed to update user');
+        }
+  
+        loadUsers(); // Reload the user list
+        closeModal(); // Close the modal
+        showSuccessModal('User updated successfully!');
+      } catch (error) {
+        showErrorModal(`Failed to update user: ${error.message}`);
+      }
+    };
+  
+    function closeModal() {
+      document.getElementById('editUserModal').classList.remove('active');
+      document.getElementById('modalOverlay').classList.remove('active');
+    }
+  
+    document.getElementById('modalOverlay').onclick = closeModal;
+  
+    loadUsers(); // Load users when page loads
+    loadLocations(); // Load locations when page loads
+  
+  </script>
+  
+</body>
+</html>

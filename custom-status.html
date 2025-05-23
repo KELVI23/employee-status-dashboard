@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:3003; object-src 'none';"> -->
+
+  <title>Custom Status</title>
+  <link rel="stylesheet" href="public/css/styles.css">
+</head>
+<body>
+  <h1>Enter Custom Status</h1>
+  <form id="statusForm">
+    <label>Custom Status:</label>
+    <input type="text" id="customStatus" required>
+    <button type="submit">Update Status</button>
+  </form>
+  <script>
+    document.getElementById('statusForm').onsubmit = (e) => {
+      e.preventDefault();
+      const customStatus = document.getElementById('customStatus').value;
+      window.api.send('custom-status', customStatus); // Send custom status to main process
+    };
+  </script>
+</body>
+</html>

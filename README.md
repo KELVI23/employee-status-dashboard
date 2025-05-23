@@ -73,7 +73,6 @@ npm run start
 This will open the login window of the Electron app. Upon successful login, the employee or admin dashboard will be displayed.
 
 ---
-
 ### Desktop application
 
 To get a desktop installable version of the app run the following command:
@@ -81,7 +80,7 @@ To get a desktop installable version of the app run the following command:
 npm run dist
 ```
 The application will be located in the .dist directory
-
+---
 ### Using the Application
 
 - **Login**: Enter your name and password to log into the system.

@@ -40,6 +40,8 @@ build/Release
 
 # Dependency directories
 node_modules/
+/node_modules
+node_modules
 jspm_packages/
 
 # Snowpack dependency directory (https://snowpack.dev/)
@@ -134,3 +136,20 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# dotenv environment variable files
+.env
+
+.DS_Store
+.vscode
+*.pfx
+# Ignore notes.js file
+notes.js
+*.log
+
+*.txt
+
+/dist
+dist/
+dist
+backend/database.db

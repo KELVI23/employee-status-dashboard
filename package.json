@@ -1,7 +1,7 @@
 {
-  "name": "GS-WorkHub",
+  "name": "WorkHub",
   "version": "2.0.0",
-  "description": "Glotman Simpson WorkHub",
+  "description": "Employee Status Dashboard",
   "main": "index.js",
   "scripts": {
     "start": "concurrently \"npm run start:electron\" \"npm run start:backend\"",
@@ -11,13 +11,13 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "build": {
-    "appId": "com.GlotmanSimpson.GS-WorkHub",
-    "productName": "GS-WorkHub",
+    "appId": "com.example.WorkHub",
+    "productName": "WorkHub",
     "publish": [
       {
         "provider": "github",
-        "owner": "Glotman-Simpson",
-        "repo": "https://github.com/Glotman-Simpson/GS-Workhub.git"
+        "owner": "Kelvin Musodza",
+        "repo": "https://github.com/KELVI23/employee-status-dashboard.git"
       }
     ],
     "directories": {
@@ -31,14 +31,14 @@
     "win": {
       "target": "nsis",
       "icon": "favicon.ico",
-      "certificateFile": "gs-workhub-certificate.pfx",
-      "certificatePassword": "Hu1wUVFyi1cK7g",
-      "publisherName": "Glotman Simpson Engineers",
+      "certificateFile": "your-cert",
+      "certificatePassword": "your-password",
+      "publisherName": "Kelvin Musodza",
       "signingHashAlgorithms": ["sha256"]
     }
   },
   "keywords": [],
-  "author": "Kelvin Musodza - Glotman Simpson",
+  "author": "Kelvin Musodza",
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^9.0.1",

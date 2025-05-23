@@ -31,7 +31,7 @@ Click the image to watch the video on YouTube.
 ---
 
 ## Getting Started
-
+**License:** [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)  
 ### Prerequisites
 
 To run the application, you need the following:

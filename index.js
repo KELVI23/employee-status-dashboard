@@ -1,3 +1,12 @@
+/**
+ * Employee Status Dashboard
+ * (c) 2025 Kelvin Musodza
+ * Licensed under CC BY-NC 4.0:
+ * https://creativecommons.org/licenses/by-nc/4.0/
+ * You may not use this software for commercial purposes.
+ */
+
+
 const { app, BrowserWindow, Menu, Tray, ipcMain } = require('electron');
 const path = require('path');
 const log = require('electron-log');

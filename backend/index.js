@@ -1,3 +1,12 @@
+/**
+ * Employee Status Dashboard
+ * (c) 2025 Kelvin Musodza
+ * Licensed under CC BY-NC 4.0:
+ * https://creativecommons.org/licenses/by-nc/4.0/
+ * You may not use this software for commercial purposes.
+ */
+
+
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');

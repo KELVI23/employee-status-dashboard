@@ -22,11 +22,11 @@ This is an Employee Status Dashboard where employees can update their current wo
 
 ![Screenshot of Employee Status Dashboard](Screenshot.png)
 
-## Demo
-
+## Demo video
+Click the image to watch the video on YouTube.
 [![Watch the demo](https://img.youtube.com/vi/qaVujcHjTYE/maxresdefault.jpg)](https://youtu.be/qaVujcHjTYE)
 
-Click the image to watch the video on YouTube.
+
 
 ---
 

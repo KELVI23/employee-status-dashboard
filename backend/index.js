@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Secret key for JWT
-const JWT_SECRET = '5dce7a75501f3a2547fefa710279362970beba890c06af4a1c0536667c13a16d3b8106f2c19d15f9f7853d73d8e9e5e6ad5cbdf33aafeb101255a3d1f2a784c4';
+const JWT_SECRET = 'XXXXXXXXXXXXXXXXXXXXXX-your-generated-key-XXXXXXXXXXxxXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
 
 const { DateTime } = require('luxon');
 
